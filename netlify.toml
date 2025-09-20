@@ -1,0 +1,13 @@
+[build]
+  command = "echo 'web admin is serverless; no build'"
+  functions = "web-admin/netlify/functions"
+  publish = "web-admin"
+
+[dev]
+  framework = "none"
+  command = "npm run start --prefix web-admin"
+
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200

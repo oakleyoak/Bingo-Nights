@@ -1,0 +1,19 @@
+# Node
+node_modules/
+npm-debug.log*
+.env
+.DS_Store
+
+# Expo
+.expo/
+.expo-shared/
+
+# Netlify
+.netlify/
+
+# IDE
+.vscode/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
