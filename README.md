@@ -90,8 +90,9 @@ SUPABASE_ANON_KEY=[Your anon key from Supabase dashboard]
 - **Realtime**: Configured and working
 
 ### 🔄 Netlify (Web Admin)
-- **Configuration**: Ready
-- **Status**: Pending deployment
+- **Site URL**: https://bingonights.netlify.app
+- **Admin URL**: https://app.netlify.com/projects/BingoNights
+- **Status**: ✅ Deployed and live
 - **Build Command**: `echo 'serverless functions'`
 - **Functions**: `web-admin/netlify/functions`
 
