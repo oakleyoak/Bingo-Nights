@@ -33,8 +33,21 @@ Next steps
 - Implement realtime game play: calling numbers, claiming bingo, validation via serverless function
 - Add tests and CI
 
-Notes
-- Do not commit secrets. Use environment variables (or Netlify/EAS secrets) for SUPABASE keys.
+## Environment Variables
+
+Set these environment variables for the mobile app (e.g., in Expo or .env file):
+
+- SUPABASE_URL = https://oluqgthjdyqffrrbnrls.supabase.co
+- SUPABASE_ANON_KEY = [Your anon key from Supabase dashboard]
+
+**Do not commit these to the repo. Use .env files or Expo secrets.**
+
+## Deployed Edge Functions
+
+- callNumber: https://oluqgthjdyqffrrbnrls.supabase.co/functions/v1/callNumber
+- validateBingo: https://oluqgthjdyqffrrbnrls.supabase.co/functions/v1/validateBingo
+
+You can invoke them from the client using `supabase.functions.invoke('functionName', { body: {...} })`.
 
 Deployment
 - Netlify deploys are supported. See `docs/deploy-instructions.md` for step-by-step instructions to create a GitHub repo, connect Netlify, and configure CI.
