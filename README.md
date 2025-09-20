@@ -47,7 +47,26 @@ Set these environment variables for the mobile app (e.g., in Expo or .env file):
 - callNumber: https://oluqgthjdyqffrrbnrls.supabase.co/functions/v1/callNumber
 - validateBingo: https://oluqgthjdyqffrrbnrls.supabase.co/functions/v1/validateBingo
 
-You can invoke them from the client using `supabase.functions.invoke('functionName', { body: {...} })`.
+## Testing
+
+After applying the schema, run the test for the `verify_bingo` function:
+
+```bash
+npm install @supabase/supabase-js
+node test_verify_bingo.js
+```
+
+This will test the bingo verification logic.
+
+## Applying the Schema
+
+To apply the Supabase schema:
+
+1. Ensure Supabase CLI is installed and logged in.
+2. Link your project: `supabase link --project-ref oluqgthjdyqffrrbnrls`
+3. Apply migrations: `supabase db push`
+
+If you encounter hostname issues, verify the DB URL in your Supabase dashboard.
 
 Deployment
 - Netlify deploys are supported. See `docs/deploy-instructions.md` for step-by-step instructions to create a GitHub repo, connect Netlify, and configure CI.
