@@ -10,5 +10,8 @@
     "start:mobile": "cd mobile; npm run start",
     "start:web": "cd web-admin; npm run start",
     "supabase:init": "echo 'Install Supabase CLI: https://supabase.com/docs/guides/cli'"
+  },
+  "devDependencies": {
+    "supabase": "^2.40.7"
   }
 }

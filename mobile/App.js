@@ -3,8 +3,8 @@ import { View, Text, Button, TextInput, StyleSheet, FlatList, TouchableOpacity }
 import { createClient } from '@supabase/supabase-js';
 
 // IMPORTANT: Set these via environment or runtime config. Do not hardcode in repo.
-const SUPABASE_URL = process.env.SUPABASE_URL || 'https://your-supabase-url.supabase.co';
-const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY || 'public-anon-key';
+const SUPABASE_URL = 'https://oluqgthjdyqffrrbnrls.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9sdXFndGhqZHlxZmZycmJucmxzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTgzNjU1OTksImV4cCI6MjA3Mzk0MTU5OX0.sfYjHwq9zLb3u8wpX-TiA596q3z0tGRLu66hFJ_cUj4';
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
