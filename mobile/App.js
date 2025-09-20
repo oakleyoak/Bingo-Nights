@@ -11,8 +11,70 @@ const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 export default function App() {
   const [email, setEmail] = useState('');
   const [user, setUser] = useState(null);
-  const [games, setGames] = useState([]);
-  const [currentScreen, setCurrentScreen] = useState('auth'); // auth, lobby, game
+  const [currentGame, setCurrentGame] = useState(null);
+  const [bingoCard, setBingoCard] = useState([]);
+  const [marked, setMarked] = useState([]);
+  const [calledNumbers, setCalledNumbers] = useState([]);
+
+  // Generate a random bingo card
+  const generateCard = () => {
+    const card = [];
+    const mark = [];
+    for (let i = 0; i < 5; i++) {
+      card[i] = [];
+      mark[i] = [];
+      for (let j = 0; j < 5; j++) {
+        if (i === 2 && j === 2) {
+          card[i][j] = 'FREE';
+          mark[i][j] = true;
+        } else {
+          card[i][j] = Math.floor(Math.random() * 75) + 1;
+          mark[i][j] = false;
+        }
+      }
+    }
+    setBingoCard(card);
+    setMarked(mark);
+  };
+
+  // Subscribe to called numbers
+  useEffect(() => {
+    if (currentGame) {
+      const channel = supabase
+        .channel('called_numbers')
+        .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'called_numbers', filter: `game_id=eq.${currentGame.id}` }, (payload) => {
+          setCalledNumbers(prev => [...prev, payload.new.number]);
+          // Mark the card if the number is on it
+          setMarked(prev => prev.map((row, i) => row.map((cell, j) => cell || bingoCard[i][j] === payload.new.number)));
+        })
+        .subscribe();
+
+      return () => supabase.removeChannel(channel);
+    }
+  }, [currentGame, bingoCard]);
+
+  // Check for bingo
+  const checkBingo = () => {
+    // Simple check for rows, columns, diagonals
+    for (let i = 0; i < 5; i++) {
+      if (marked[i].every(m => m)) return true; // row
+      if (marked.every(row => row[i])) return true; // column
+    }
+    if (marked.every((row, i) => row[i])) return true; // diagonal
+    if (marked.every((row, i) => row[4 - i])) return true; // diagonal
+    return false;
+  };
+
+  const joinGame = async (gameId) => {
+    const { data: game, error: gameError } = await supabase.from('games').select('*').eq('id', gameId).single();
+    if (gameError) return;
+    const { error } = await supabase.from('players').insert([{ game_id: gameId, user_id: user.id }]);
+    if (!error) {
+      setCurrentGame(game);
+      generateCard();
+      setCurrentScreen('game');
+    }
+  };
 
   useEffect(() => {
     const session = supabase.auth.getSession().then(res => {
@@ -55,10 +117,13 @@ export default function App() {
   };
 
   const joinGame = async (gameId) => {
+    const { data: game, error: gameError } = await supabase.from('games').select('*').eq('id', gameId).single();
+    if (gameError) return;
     const { error } = await supabase.from('players').insert([{ game_id: gameId, user_id: user.id }]);
     if (!error) {
+      setCurrentGame(game);
+      generateCard();
       setCurrentScreen('game');
-      // TODO: Implement game screen
     }
   };
 
@@ -96,8 +161,28 @@ export default function App() {
   if (currentScreen === 'game') {
     return (
       <View style={styles.container}>
-        <Text style={styles.title}>Game Screen</Text>
-        <Text>Game in progress...</Text>
+        <Text style={styles.title}>Game: {currentGame?.title}</Text>
+        <Text>Called Numbers: {calledNumbers.join(', ')}</Text>
+        <View style={styles.card}>
+          {bingoCard.map((row, i) => (
+            <View key={i} style={styles.row}>
+              {row.map((num, j) => (
+                <TouchableOpacity
+                  key={j}
+                  style={[styles.cell, marked[i][j] && styles.marked]}
+                  onPress={() => {
+                    if (num !== 'FREE' && calledNumbers.includes(num)) {
+                      setMarked(prev => prev.map((r, ri) => ri === i ? r.map((c, cj) => cj === j ? true : c) : r));
+                    }
+                  }}
+                >
+                  <Text>{num}</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          ))}
+        </View>
+        {checkBingo() && <Button title="BINGO!" onPress={() => alert('Bingo claimed!')} />}
         <Button title="Back to Lobby" onPress={() => setCurrentScreen('lobby')} />
       </View>
     );
@@ -112,4 +197,8 @@ const styles = StyleSheet.create({
   input: { width: '100%', borderWidth: 1, borderColor: '#ccc', padding: 8, marginBottom: 12 },
   subtitle: { fontSize: 18, marginVertical: 16 },
   gameItem: { padding: 10, marginVertical: 5, backgroundColor: '#f0f0f0', width: '100%', alignItems: 'center' },
+  card: { flexDirection: 'column', marginVertical: 20 },
+  row: { flexDirection: 'row' },
+  cell: { width: 50, height: 50, borderWidth: 1, borderColor: '#000', alignItems: 'center', justifyContent: 'center', margin: 2 },
+  marked: { backgroundColor: 'red' },
 });
