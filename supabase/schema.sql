@@ -67,3 +67,72 @@ create index if not exists idx_called_numbers_game on called_numbers(game_id);
 -- Seed: demo game
 insert into games (id, title, status)
 values (gen_random_uuid(), 'Demo Room', 'waiting');
+
+-- Function: verify_bingo
+-- Verifies whether a provided card snapshot (jsonb) contains a winning bingo
+-- card_snapshot format: { "numbers": [[..],[..],..], "marked": [[true,false,...], ...] }
+-- called_numbers_snapshot: array of ints (in order)
+create or replace function public.verify_bingo(card_snapshot jsonb, called_numbers_snapshot jsonb)
+returns boolean
+language plpgsql
+as $$
+declare
+  marks boolean[][];
+  r int;
+  c int;
+  size int := 5; -- standard 5x5 bingo
+  row_bingo boolean;
+  col_bingo boolean;
+  diag1 boolean := true;
+  diag2 boolean := true;
+begin
+  -- extract marked matrix
+  if not (card_snapshot ? 'marked') then
+    return false;
+  end if;
+
+  -- verify rows
+  for r in 1..size loop
+    row_bingo := true;
+    for c in 1..size loop
+      if not (card_snapshot->'marked'->(r-1)->> (c-1))::boolean then
+        row_bingo := false;
+        exit;
+      end if;
+    end loop;
+    if row_bingo then
+      return true;
+    end if;
+  end loop;
+
+  -- verify columns
+  for c in 1..size loop
+    col_bingo := true;
+    for r in 1..size loop
+      if not (card_snapshot->'marked'->(r-1)->> (c-1))::boolean then
+        col_bingo := false;
+        exit;
+      end if;
+    end loop;
+    if col_bingo then
+      return true;
+    end if;
+  end loop;
+
+  -- verify diagonals
+  for r in 1..size loop
+    if not (card_snapshot->'marked'->(r-1)->> (r-1))::boolean then
+      diag1 := false;
+    end if;
+    if not (card_snapshot->'marked'->(r-1)->> (size-r))::boolean then
+      diag2 := false;
+    end if;
+  end loop;
+
+  if diag1 or diag2 then
+    return true;
+  end if;
+
+  return false;
+end;
+$$;
