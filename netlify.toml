@@ -1,15 +1,12 @@
 [build]
-  base = "web-admin"
-  command = "npm ci && npm run build"
+  base = "mobile"
+  command = "npm run build:web"
   publish = "dist"
 
-[build.environment]
-  NODE_VERSION = "18"
-
 [dev]
-  base = "web-admin"
-  command = "npm run dev"
-  port = 5173
+  base = "mobile"
+  command = "npm start"
+  port = 3000
 
 [[redirects]]
   from = "/*"
