@@ -2,13 +2,9 @@
   "name": "bingo-nights",
   "version": "0.1.0",
   "private": true,
-  "workspaces": [
-    "mobile",
-    "web-admin"
-  ],
   "scripts": {
-    "start:mobile": "cd mobile; npm run start",
-    "start:web": "cd web-admin; npm run start",
+    "start:mobile": "cd mobile && npm start",
+    "start:web-admin": "cd web-admin && npm run dev",
     "supabase:init": "echo 'Install Supabase CLI: https://supabase.com/docs/guides/cli'"
   },
   "devDependencies": {

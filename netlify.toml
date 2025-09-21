@@ -1,7 +1,11 @@
+# Netlify configuration for Bingo Nights Mobile App
+# This builds the Expo React Native web export
+
 [build]
   base = "mobile"
   command = "npm ci && timeout 600 npx expo export --platform web --output-dir dist"
   publish = "dist"
+  ignore = "git diff --quiet HEAD^ HEAD -- mobile/"
 
 [build.environment]
   NODE_VERSION = "18"
@@ -14,6 +18,12 @@
   base = "mobile"
   command = "npm start"
   port = 3000
+
+# Production context - only build on main branch
+[context.production]
+  base = "mobile"
+  command = "npm ci && timeout 600 npx expo export --platform web --output-dir dist"
+  publish = "dist"
 
 [[redirects]]
   from = "/*"
