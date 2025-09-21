@@ -480,14 +480,31 @@ SUPABASE_ANON_KEY=[Your anon key from Supabase dashboard]
    - Impact: Low (dev dependency only)
    - Status: Monitoring
 
-## Deployment Instructions
 
-### Netlify Deployment
-1. Connect GitHub repository to Netlify
-2. Set build command: `echo 'web admin is serverless; no build'`
-3. Set publish directory: `web-admin`
-4. Set functions directory: `web-admin/netlify/functions`
-5. Deploy
+## Deployment Pipeline Troubleshooting & Lessons Learned
+
+### Netlify Deployment Issues (2025)
+
+- **Problem:** Netlify deploys failed due to `netlify.toml` parsing errors, BOM/encoding issues, and line ending problems. Workflow misconfigurations also caused CI/CD failures.
+- **Root Cause:** Changes to `netlify.toml` (encoding, line endings, or syntax) or the GitHub Actions workflow broke the deployment pipeline. Netlify requires UTF-8 (no BOM) and LF line endings for TOML files.
+- **Resolution:** Restored `netlify.toml` and `.github/workflows/netlify-deploy.yml` to the last known good state (`main@6ee14c8`). Normalized encoding and line endings. Verified file location and syntax.
+- **Key Files:**
+   - `netlify.toml` (project root, correct encoding/line endings)
+   - `.github/workflows/netlify-deploy.yml` (workflow for CI/CD)
+- **Best Practices:**
+   - **Never change deployment config files without careful testing.**
+   - If deploys break, immediately restore these files to the last working version.
+   - Always check for BOM/encoding and line ending issues in TOML files.
+   - Reference the correct process in `README.md` and `docs/deploy-instructions.md`.
+
+### Correct Deployment Process
+
+1. Ensure `netlify.toml` is at the project root, UTF-8 (no BOM), LF line endings.
+2. Use the provided `.github/workflows/netlify-deploy.yml` for CI/CD.
+3. Set required environment variables in Netlify and GitHub repo secrets.
+4. See `README.md` and `docs/deploy-instructions.md` for full step-by-step instructions.
+
+---
 
 ### Mobile App Distribution
 1. Build for production: `npx expo build`
