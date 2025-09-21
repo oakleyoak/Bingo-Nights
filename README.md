@@ -366,3 +366,5 @@ Deployment
 Netlify deploy badge (replace with actual badge after first deploy):
 
 ![Netlify Status](https://api.netlify.com/api/v1/badges/REPLACE_WITH_YOUR_SITE_ID/deploy-status)
+#   F o r c e   r e b u i l d  
+ 
