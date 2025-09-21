@@ -1,10 +1,11 @@
 [build]
-  command = "echo 'Simple HTML admin - no build needed'"
-  functions = "web-admin/netlify/functions"
-  publish = "web-admin"
+  base = "mobile"
+  command = "npm run build:web"
+  publish = "dist"
 
 [dev]
-  command = "cd web-admin && python -m http.server 3000"
+  base = "mobile"
+  command = "npm start"
   port = 3000
 
 [[redirects]]
