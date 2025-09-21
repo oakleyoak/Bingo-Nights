@@ -291,8 +291,10 @@ export default function App() {
   };
 
   const loadUserProfile = async () => {
+    console.log('loadUserProfile called, user:', user);
     if (user) {
       try {
+        console.log('Processing daily login for user:', user.id);
         // First, ensure profile exists and process daily login
         const { data: loginResult, error } = await supabase
           .rpc('process_daily_login', { user_id: user.id });
@@ -343,12 +345,15 @@ export default function App() {
                 consecutive_login_days: 0
               });
             } else {
+              console.log('Created new profile:', newProfile);
               setUserProfile(newProfile);
             }
           } else if (existingProfile) {
+            console.log('Found existing profile:', existingProfile);
             setUserProfile(existingProfile);
           } else {
             // Set basic profile in state as fallback
+            console.log('Setting fallback profile');
             setUserProfile({
               points: 100,
               level: 1,
@@ -357,14 +362,25 @@ export default function App() {
             });
           }
         } else {
+          console.log('Daily login processed successfully:', loginResult);
           // Load the updated profile
-          const { data: updatedProfile } = await supabase
+          const { data: updatedProfile, error: profileError } = await supabase
             .from('profiles')
             .select('*')
             .eq('id', user.id)
             .single();
 
-          if (updatedProfile) {
+          if (profileError) {
+            console.error('Error fetching updated profile:', profileError);
+            // Set basic profile as fallback
+            setUserProfile({
+              points: 100,
+              level: 1,
+              experience_points: 0,
+              consecutive_login_days: 0
+            });
+          } else if (updatedProfile) {
+            console.log('Setting updated profile:', updatedProfile);
             setUserProfile(updatedProfile);
 
             // Show level-up notification if applicable
@@ -392,6 +408,8 @@ export default function App() {
           consecutive_login_days: 0
         });
       }
+    } else {
+      console.log('loadUserProfile called but no user');
     }
   };
 
