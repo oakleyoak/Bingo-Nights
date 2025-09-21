@@ -289,6 +289,13 @@ export default function App() {
 
         if (error) {
           console.error('Error processing daily login:', error);
+          // Check if it's a foreign key error (user doesn't exist in auth.users)
+          if (error.message && error.message.includes('foreign key constraint')) {
+            alert('Your account needs to be re-verified after database maintenance. Please sign out and sign in again.');
+            await supabase.auth.signOut();
+            return;
+          }
+
           // Fallback: check if profile exists, create if not
           const { data: existingProfile, error: profileError } = await supabase
             .from('profiles')
@@ -312,6 +319,12 @@ export default function App() {
 
             if (createError) {
               console.error('Error creating profile:', createError);
+              // Check if it's a foreign key error
+              if (createError.message && createError.message.includes('foreign key constraint')) {
+                alert('Your account needs to be re-verified after database maintenance. Please sign out and sign in again.');
+                await supabase.auth.signOut();
+                return;
+              }
               // Set basic profile in state as last resort
               setUserProfile({
                 points: 100,
