@@ -267,6 +267,7 @@ export default function App() {
         setUser(res.data.session.user);
         setCurrentScreen('lobby');
         fetchGames();
+        loadUserProfile();
       }
     });
 
