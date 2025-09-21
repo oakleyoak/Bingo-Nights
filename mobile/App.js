@@ -385,7 +385,27 @@ export default function App() {
     }
   };
 
-  const signIn = async () => {
+  const resendConfirmation = async () => {
+    if (!email) {
+      alert('Please enter your email address first.');
+      return;
+    }
+
+    try {
+      const { error } = await supabase.auth.resend({
+        type: 'signup',
+        email: email,
+        options: {
+          emailRedirectTo: 'http://localhost:8081'
+        }
+      });
+
+      if (error) throw error;
+      alert('Confirmation email sent! Please check your email.');
+    } catch (error) {
+      alert('Error sending confirmation email: ' + error.message);
+    }
+  };
     if (!email || !password) {
       alert('Please fill in all fields');
       return;
@@ -407,12 +427,26 @@ export default function App() {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
       } else {
-        const { error } = await supabase.auth.signUp({ email, password });
+        const { error } = await supabase.auth.signUp({
+          email,
+          password,
+          options: {
+            emailRedirectTo: 'http://localhost:8081' // Update this for your app's URL
+          }
+        });
         if (error) throw error;
+        alert('Account created! Please check your email and click the confirmation link. If you don\'t see it, check your spam folder.');
         setShowRegistrationModal(true);
       }
     } catch (error) {
-      alert(error.message);
+      // Handle specific auth errors
+      if (error.message.includes('Email not confirmed')) {
+        alert('Please check your email and click the confirmation link before signing in.');
+      } else if (error.message.includes('Invalid login credentials')) {
+        alert('Invalid email or password. If you just signed up, please confirm your email first.');
+      } else {
+        alert(error.message);
+      }
     }
   };
 
@@ -627,12 +661,20 @@ export default function App() {
               <Text style={styles.modalMessage}>
                 Please check your email to confirm your account before signing in.
               </Text>
-              <TouchableOpacity
-                style={styles.modalButton}
-                onPress={() => setShowRegistrationModal(false)}
-              >
-                <Text style={styles.modalButtonText}>Got it!</Text>
-              </TouchableOpacity>
+              <View style={styles.modalButtons}>
+                <TouchableOpacity
+                  style={[styles.modalButton, styles.resendButton]}
+                  onPress={resendConfirmation}
+                >
+                  <Text style={styles.resendButtonText}>Resend Email</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={styles.modalButton}
+                  onPress={() => setShowRegistrationModal(false)}
+                >
+                  <Text style={styles.modalButtonText}>Got it!</Text>
+                </TouchableOpacity>
+              </View>
             </View>
           </View>
         </Modal>
@@ -1322,6 +1364,20 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
     textAlign: 'center',
+  },
+  modalButtons: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    width: '100%',
+    gap: 10,
+  },
+  resendButton: {
+    backgroundColor: '#95a5a6',
+    flex: 1,
+  },
+  resendButtonText: {
+    color: '#2c3e50',
+    fontSize: 14,
   },
 
   // Existing styles
