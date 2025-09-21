@@ -1,7 +1,14 @@
 [build]
   base = "mobile"
-  command = "npm run build:web"
+  command = "npm ci && timeout 600 npx expo export --platform web --output-dir dist"
   publish = "dist"
+
+[build.environment]
+  NODE_VERSION = "18"
+  NPM_VERSION = "9"
+  EXPO_CLI_VERSION = "6.3.10"
+  CI = "true"
+  EXPO_NO_CACHE = "false"
 
 [dev]
   base = "mobile"
