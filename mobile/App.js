@@ -345,6 +345,55 @@ export default function App() {
     return () => listener?.subscription?.unsubscribe?.();
   }, []);
 
+  // Realtime subscription for called numbers
+  useEffect(() => {
+    if (!currentGame?.id) return;
+
+    console.log('Setting up realtime subscription for game:', currentGame.id);
+
+    const channel = supabase
+      .channel(`game-${currentGame.id}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'called_numbers',
+          filter: `game_id=eq.${currentGame.id}`
+        },
+        (payload) => {
+          console.log('New number called:', payload.new);
+          setCalledNumbers(prev => [...prev, payload.new.number]);
+        }
+      )
+      .subscribe();
+
+    return () => {
+      console.log('Unsubscribing from game channel');
+      supabase.removeChannel(channel);
+    };
+  }, [currentGame?.id]);
+
+  // Load existing called numbers when joining a game
+  useEffect(() => {
+    if (!currentGame?.id) return;
+
+    const loadCalledNumbers = async () => {
+      const { data, error } = await supabase
+        .from('called_numbers')
+        .select('number')
+        .eq('game_id', currentGame.id)
+        .order('called_at', { ascending: true });
+
+      if (!error && data) {
+        setCalledNumbers(data.map(row => row.number));
+        console.log('Loaded existing called numbers:', data.map(row => row.number));
+      }
+    };
+
+    loadCalledNumbers();
+  }, [currentGame?.id]);
+
   const fetchGames = async () => {
     const { data, error } = await supabase.from('games').select('*').eq('status', 'waiting').order('created_at', { ascending: false }).limit(1);
     if (!error) setGames(data || []);
@@ -354,118 +403,120 @@ export default function App() {
     console.log('loadUserProfile called, user:', user);
     if (user) {
       try {
-        console.log('Processing daily login for user:', user.id);
-        // First, ensure profile exists and process daily login
-        const { data: loginResult, error } = await supabase
-          .rpc('process_daily_login', { user_id: user.id });
+        console.log('Loading profile for user:', user.id);
 
-        if (error) {
-          console.error('Error processing daily login:', error);
-          // Check if it's a foreign key error (user doesn't exist in auth.users)
-          if (error.message && error.message.includes('foreign key constraint')) {
-            alert('Your account needs to be re-verified after database maintenance. Please sign out and sign in again.');
-            await supabase.auth.signOut();
+        // First, check if profile exists
+        let { data: existingProfile, error: profileError } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', user.id)
+          .single();
+
+        let profile = existingProfile;
+
+        if (profileError && profileError.code === 'PGRST116') {
+          // Profile doesn't exist, create it
+          console.log('Profile not found, creating new profile');
+          const { data: newProfile, error: createError } = await supabase
+            .from('profiles')
+            .insert([{
+              id: user.id,
+              points: 100,
+              level: 1,
+              experience_points: 0,
+              consecutive_login_days: 0,
+              total_games_played: 0,
+              total_bingos: 0
+            }])
+            .select()
+            .single();
+
+          if (createError) {
+            console.error('Error creating profile:', createError);
+            // Set basic profile in state as fallback
+            setUserProfile({
+              points: 100,
+              level: 1,
+              experience_points: 0,
+              consecutive_login_days: 0,
+              total_games_played: 0,
+              total_bingos: 0
+            });
             return;
           }
+          profile = newProfile;
+          console.log('Created new profile:', profile);
+        } else if (profileError) {
+          console.error('Error loading profile:', profileError);
+          // Set basic profile as fallback
+          setUserProfile({
+            points: 100,
+            level: 1,
+            experience_points: 0,
+            consecutive_login_days: 0,
+            total_games_played: 0,
+            total_bingos: 0
+          });
+          return;
+        }
 
-          // Fallback: check if profile exists, create if not
-          const { data: existingProfile, error: profileError } = await supabase
-            .from('profiles')
-            .select('*')
-            .eq('id', user.id)
-            .single();
+        // Try to process daily login if the RPC exists
+        try {
+          const { data: loginResult, error: rpcError } = await supabase
+            .rpc('process_daily_login', { user_id: user.id });
 
-          if (profileError && profileError.code === 'PGRST116') {
-            // Profile doesn't exist, create it
-            const { data: newProfile, error: createError } = await supabase
+          if (!rpcError && loginResult) {
+            console.log('Daily login processed via RPC:', loginResult);
+            // Reload profile to get updated data
+            const { data: updatedProfile } = await supabase
               .from('profiles')
-              .insert([{
-                id: user.id,
-                points: 100,
-                level: 1,
-                experience_points: 0,
-                consecutive_login_days: 0
-              }])
-              .select()
+              .select('*')
+              .eq('id', user.id)
               .single();
 
-            if (createError) {
-              console.error('Error creating profile:', createError);
-              // Check if it's a foreign key error
-              if (createError.message && createError.message.includes('foreign key constraint')) {
-                alert('Your account needs to be re-verified after database maintenance. Please sign out and sign in again.');
-                await supabase.auth.signOut();
-                return;
+            if (updatedProfile) {
+              profile = updatedProfile;
+
+              // Show notifications if RPC worked
+              if (loginResult.leveled_up) {
+                setTimeout(() => {
+                  alert(`🎉 Level Up! You reached Level ${loginResult.new_level}!\n\nDaily login rewards increased by 10%!`);
+                }, 1000);
               }
-              // Set basic profile in state as last resort
-              setUserProfile({
-                points: 100,
-                level: 1,
-                experience_points: 0,
-                consecutive_login_days: 0
-              });
-            } else {
-              console.log('Created new profile:', newProfile);
-              setUserProfile(newProfile);
+
+              if (loginResult.points_awarded > 0) {
+                setTimeout(() => {
+                  alert(`🌅 Daily Login Bonus!\n\n+${loginResult.points_awarded} points\n+${loginResult.xp_awarded} XP\n${loginResult.consecutive_days} day streak!`);
+                }, 500);
+              }
             }
-          } else if (existingProfile) {
-            console.log('Found existing profile:', existingProfile);
-            setUserProfile(existingProfile);
           } else {
-            // Set basic profile in state as fallback
-            console.log('Setting fallback profile');
-            setUserProfile({
-              points: 100,
-              level: 1,
-              experience_points: 0,
-              consecutive_login_days: 0
-            });
+            console.log('RPC not available or failed, using basic profile loading');
           }
-        } else {
-          console.log('Daily login processed successfully:', loginResult);
-          // Load the updated profile
-          const { data: updatedProfile, error: profileError } = await supabase
-            .from('profiles')
-            .select('*')
-            .eq('id', user.id)
-            .single();
-
-          if (profileError) {
-            console.error('Error fetching updated profile:', profileError);
-            // Set basic profile as fallback
-            setUserProfile({
-              points: 100,
-              level: 1,
-              experience_points: 0,
-              consecutive_login_days: 0
-            });
-          } else if (updatedProfile) {
-            console.log('Setting updated profile:', updatedProfile);
-            setUserProfile(updatedProfile);
-
-            // Show level-up notification if applicable
-            if (loginResult.leveled_up) {
-              setTimeout(() => {
-                alert(`🎉 Level Up! You reached Level ${loginResult.new_level}!\n\nDaily login rewards increased by 10%!`);
-              }, 1000);
-            }
-
-            // Show daily login reward notification
-            if (loginResult.points_awarded > 0) {
-              setTimeout(() => {
-                alert(`🌅 Daily Login Bonus!\n\n+${loginResult.points_awarded} points\n+${loginResult.xp_awarded} XP\n${loginResult.consecutive_days} day streak!`);
-              }, 500);
-            }
-          }
+        } catch (rpcException) {
+          console.log('process_daily_login RPC not available, proceeding with basic profile');
         }
+
+        console.log('Setting user profile:', profile);
+        setUserProfile(profile);
+
+        // Try to check achievements if the function exists
+        try {
+          await checkForNewAchievements(profile);
+        } catch (achievementError) {
+          console.log('Achievement system not available');
+        }
+
       } catch (error) {
-        console.error('Error loading user profile:', error);
+        console.error('Error in loadUserProfile:', error);
         // Fallback to basic profile
         setUserProfile({
           points: 100,
           level: 1,
           experience_points: 0,
-          consecutive_login_days: 0
+          consecutive_login_days: 0,
+          total_games_played: 0,
+          total_bingos: 0
         });
       }
     } else {
