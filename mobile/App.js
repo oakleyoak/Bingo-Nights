@@ -406,6 +406,8 @@ export default function App() {
       alert('Error sending confirmation email: ' + error.message);
     }
   };
+
+  const signIn = async () => {
     if (!email || !password) {
       alert('Please fill in all fields');
       return;
