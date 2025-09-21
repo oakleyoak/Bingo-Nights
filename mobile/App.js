@@ -27,6 +27,7 @@ export default function App() {
   const [gameStatus, setGameStatus] = useState('waiting'); // waiting, running, finished
   const [playerCards, setPlayerCards] = useState([]); // Array of cards for multi-card support
   const [showRegistrationModal, setShowRegistrationModal] = useState(false);
+  const [lastResendTime, setLastResendTime] = useState(0); // Track last resend attempt time
 
   // Generate a random bingo card
   const generateCard = () => {
@@ -391,6 +392,17 @@ export default function App() {
       return;
     }
 
+    // Rate limiting: prevent resending within 60 seconds
+    const now = Date.now();
+    const timeSinceLastResend = now - lastResendTime;
+    const cooldownPeriod = 60000; // 60 seconds
+
+    if (timeSinceLastResend < cooldownPeriod) {
+      const remainingSeconds = Math.ceil((cooldownPeriod - timeSinceLastResend) / 1000);
+      alert(`Please wait ${remainingSeconds} seconds before requesting another confirmation email.`);
+      return;
+    }
+
     try {
       const { error } = await supabase.auth.resend({
         type: 'signup',
@@ -401,9 +413,16 @@ export default function App() {
       });
 
       if (error) throw error;
+      
+      setLastResendTime(now);
       alert('Confirmation email sent! Please check your email.');
     } catch (error) {
-      alert('Error sending confirmation email: ' + error.message);
+      // Handle rate limiting error specifically
+      if (error.message.includes('Too Many Requests') || error.status === 429) {
+        alert('Too many resend requests. Please wait a few minutes before trying again.');
+      } else {
+        alert('Error sending confirmation email: ' + error.message);
+      }
     }
   };
 
@@ -665,10 +684,23 @@ export default function App() {
               </Text>
               <View style={styles.modalButtons}>
                 <TouchableOpacity
-                  style={[styles.modalButton, styles.resendButton]}
+                  style={[
+                    styles.modalButton, 
+                    styles.resendButton,
+                    (Date.now() - lastResendTime) < 60000 && styles.resendButtonDisabled
+                  ]}
                   onPress={resendConfirmation}
+                  disabled={(Date.now() - lastResendTime) < 60000}
                 >
-                  <Text style={styles.resendButtonText}>Resend Email</Text>
+                  <Text style={[
+                    styles.resendButtonText,
+                    (Date.now() - lastResendTime) < 60000 && styles.resendButtonTextDisabled
+                  ]}>
+                    {(Date.now() - lastResendTime) < 60000 
+                      ? `Wait ${Math.ceil((60000 - (Date.now() - lastResendTime)) / 1000)}s`
+                      : 'Resend Email'
+                    }
+                  </Text>
                 </TouchableOpacity>
                 <TouchableOpacity
                   style={styles.modalButton}
@@ -1377,9 +1409,16 @@ const styles = StyleSheet.create({
     backgroundColor: '#95a5a6',
     flex: 1,
   },
+  resendButtonDisabled: {
+    backgroundColor: '#ecf0f1',
+    opacity: 0.6,
+  },
   resendButtonText: {
     color: '#2c3e50',
     fontSize: 14,
+  },
+  resendButtonTextDisabled: {
+    color: '#7f8c8d',
   },
 
   // Existing styles
