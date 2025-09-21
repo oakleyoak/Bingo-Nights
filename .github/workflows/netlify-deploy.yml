@@ -20,14 +20,25 @@ jobs:
           cd web-admin
           npm ci
 
+      - name: Build web-admin
+        run: |
+          cd web-admin
+          npm run build
+
       - name: Run tests (none)
         run: |
           echo "No tests configured"
 
       - name: Deploy to Netlify
-        uses: netlify/actions/cli@master
+        uses: nwtgck/actions-netlify@v3.0
         with:
-          args: deploy --dir=web-admin --prod
+          publish-dir: './web-admin/dist'
+          production-branch: main
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          deploy-message: "Deploy from GitHub Actions"
+          enable-pull-request-comment: false
+          enable-commit-comment: false
+          overwrites-pull-request-comment: false
         env:
           NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
           NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}
