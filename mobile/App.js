@@ -289,17 +289,43 @@ export default function App() {
 
         if (error) {
           console.error('Error processing daily login:', error);
-          // Fallback: just load existing profile
-          const { data: existingProfile } = await supabase
+          // Fallback: check if profile exists, create if not
+          const { data: existingProfile, error: profileError } = await supabase
             .from('profiles')
             .select('*')
             .eq('id', user.id)
             .single();
 
-          if (existingProfile) {
+          if (profileError && profileError.code === 'PGRST116') {
+            // Profile doesn't exist, create it
+            const { data: newProfile, error: createError } = await supabase
+              .from('profiles')
+              .insert([{
+                id: user.id,
+                points: 100,
+                level: 1,
+                experience_points: 0,
+                consecutive_login_days: 0
+              }])
+              .select()
+              .single();
+
+            if (createError) {
+              console.error('Error creating profile:', createError);
+              // Set basic profile in state as last resort
+              setUserProfile({
+                points: 100,
+                level: 1,
+                experience_points: 0,
+                consecutive_login_days: 0
+              });
+            } else {
+              setUserProfile(newProfile);
+            }
+          } else if (existingProfile) {
             setUserProfile(existingProfile);
           } else {
-            // Create basic profile if none exists
+            // Set basic profile in state as fallback
             setUserProfile({
               points: 100,
               level: 1,
@@ -391,42 +417,76 @@ export default function App() {
     const { data: game, error: gameError } = await supabase.from('games').select('*').eq('id', gameId).single();
     if (gameError) return;
 
-    // Create player record
-    const { data: player, error: playerError } = await supabase
+    // Check if user is already in this game
+    const { data: existingPlayer, error: checkError } = await supabase
       .from('players')
-      .insert([{ game_id: gameId, user_id: user.id }])
-      .select()
+      .select('*')
+      .eq('game_id', gameId)
+      .eq('user_id', user.id)
       .single();
 
-    if (playerError) {
-      alert('Error joining game: ' + playerError.message);
-      return;
+    let player;
+    if (existingPlayer) {
+      // User is already in the game, use existing player record
+      player = existingPlayer;
+    } else {
+      // Create new player record
+      const { data: newPlayer, error: playerError } = await supabase
+        .from('players')
+        .insert([{ game_id: gameId, user_id: user.id }])
+        .select()
+        .single();
+
+      if (playerError) {
+        alert('Error joining game: ' + playerError.message);
+        return;
+      }
+      player = newPlayer;
     }
 
-    // Generate multiple free bingo cards for the player (default 1, can purchase more)
-    const numCards = 1; // Start with 1 free card
-    const cards = [];
-    for (let i = 0; i < numCards; i++) {
-      cards.push(generateCard());
+    // Check if user already has cards for this game
+    const { data: existingCards, error: cardsError } = await supabase
+      .from('bingo_cards')
+      .select('*')
+      .eq('game_id', gameId)
+      .eq('player_id', player.id);
+
+    let cards;
+    if (existingCards && existingCards.length > 0) {
+      // Load existing cards
+      cards = existingCards.map(card => ({
+        numbers: card.numbers,
+        marked: card.marked
+      }));
+    } else {
+      // Generate new cards
+      const numCards = 1; // Start with 1 free card
+      cards = [];
+      for (let i = 0; i < numCards; i++) {
+        cards.push(generateCard());
+      }
+
+      // Store cards in database
+      const cardInserts = cards.map((card, index) => ({
+        game_id: gameId,
+        player_id: player.id,
+        card_number: index + 1,
+        numbers: card.numbers,
+        marked: card.marked
+      }));
+
+      await supabase
+        .from('bingo_cards')
+        .insert(cardInserts);
     }
+
     setPlayerCards(cards);
 
-    // Store cards in database
-    const cardInserts = cards.map((card, index) => ({
-      game_id: gameId,
-      player_id: player.id,
-      card_number: index + 1,
-      numbers: card.numbers,
-      marked: card.marked
-    }));
-
-    await supabase
-      .from('bingo_cards')
-      .insert(cardInserts);
-
-    // Set card as active
-    setBingoCard(card.numbers);
-    setMarked(card.marked);
+    // Set first card as active
+    if (cards.length > 0) {
+      setBingoCard(cards[0].numbers);
+      setMarked(cards[0].marked);
+    }
 
     setCurrentGame(game);
     setCurrentScreen('game');
@@ -444,7 +504,7 @@ export default function App() {
             {authMode === 'login' ? 'Welcome Back!' : 'Join the Fun!'}
           </Text>
 
-          <View style={styles.authForm}>
+          <View style={styles.authForm} accessibilityRole="form">
             <View style={styles.inputGroup}>
               <Text style={styles.inputLabel}>Email</Text>
               <TextInput
