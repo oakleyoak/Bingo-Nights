@@ -4,6 +4,9 @@ npm-debug.log*
 .env
 .DS_Store
 
+# Build outputs
+dist/
+
 # Expo
 .expo/
 .expo-shared/
