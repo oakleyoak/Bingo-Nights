@@ -415,20 +415,28 @@ export default function App() {
 
   const joinGame = async (gameId) => {
     const { data: game, error: gameError } = await supabase.from('games').select('*').eq('id', gameId).single();
-    if (gameError) return;
+    if (gameError) {
+      alert('Error loading game: ' + gameError.message);
+      return;
+    }
+
+    // Ensure user profile exists before joining
+    if (!userProfile) {
+      alert('User profile not loaded. Please try logging in again.');
+      return;
+    }
 
     // Check if user is already in this game
     const { data: existingPlayer, error: checkError } = await supabase
       .from('players')
       .select('*')
       .eq('game_id', gameId)
-      .eq('user_id', user.id)
-      .single();
+      .eq('user_id', user.id);
 
     let player;
-    if (existingPlayer) {
+    if (existingPlayer && existingPlayer.length > 0) {
       // User is already in the game, use existing player record
-      player = existingPlayer;
+      player = existingPlayer[0];
     } else {
       // Create new player record
       const { data: newPlayer, error: playerError } = await supabase
@@ -439,6 +447,7 @@ export default function App() {
 
       if (playerError) {
         alert('Error joining game: ' + playerError.message);
+        console.error('Player insert error:', playerError);
         return;
       }
       player = newPlayer;
@@ -475,9 +484,15 @@ export default function App() {
         marked: card.marked
       }));
 
-      await supabase
+      const { error: insertError } = await supabase
         .from('bingo_cards')
         .insert(cardInserts);
+
+      if (insertError) {
+        console.error('Error inserting cards:', insertError);
+        alert('Error creating bingo cards: ' + insertError.message);
+        return;
+      }
     }
 
     setPlayerCards(cards);
