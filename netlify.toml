@@ -5,6 +5,7 @@
   base = "web-admin"
   command = "npm ci && npm run build"
   publish = "dist"
+  ignore = "git diff --quiet HEAD^ HEAD -- web-admin/"
 
 [build.environment]
   NODE_VERSION = "18"
