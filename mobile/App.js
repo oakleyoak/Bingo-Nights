@@ -414,18 +414,34 @@ export default function App() {
   };
 
   const joinGame = async (gameId) => {
+    console.log('joinGame called with gameId:', gameId);
+    console.log('Current user:', user);
+    console.log('Current userProfile:', userProfile);
+
     const { data: game, error: gameError } = await supabase.from('games').select('*').eq('id', gameId).single();
     if (gameError) {
+      console.error('Error loading game:', gameError);
       alert('Error loading game: ' + gameError.message);
+      return;
+    }
+
+    // Ensure user is authenticated
+    if (!user || !user.id) {
+      alert('You must be logged in to join a game.');
       return;
     }
 
     // Ensure user profile exists before joining
     if (!userProfile) {
-      alert('User profile not loaded. Please try logging in again.');
-      return;
+      console.log('UserProfile not loaded, attempting to load...');
+      await loadUserProfile();
+      if (!userProfile) {
+        alert('Unable to load user profile. Please try logging in again.');
+        return;
+      }
     }
 
+    console.log('Checking for existing player...');
     // Check if user is already in this game
     const { data: existingPlayer, error: checkError } = await supabase
       .from('players')
@@ -433,12 +449,16 @@ export default function App() {
       .eq('game_id', gameId)
       .eq('user_id', user.id);
 
+    console.log('Existing player check result:', { existingPlayer, checkError });
+
     let player;
     if (existingPlayer && existingPlayer.length > 0) {
       // User is already in the game, use existing player record
+      console.log('Using existing player record');
       player = existingPlayer[0];
     } else {
       // Create new player record
+      console.log('Creating new player record for user:', user.id);
       const { data: newPlayer, error: playerError } = await supabase
         .from('players')
         .insert([{ game_id: gameId, user_id: user.id }])
@@ -446,10 +466,11 @@ export default function App() {
         .single();
 
       if (playerError) {
+        console.error('Error creating player:', playerError);
         alert('Error joining game: ' + playerError.message);
-        console.error('Player insert error:', playerError);
         return;
       }
+      console.log('Created new player:', newPlayer);
       player = newPlayer;
     }
 
