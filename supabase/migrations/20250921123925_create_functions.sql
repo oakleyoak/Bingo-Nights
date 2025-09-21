@@ -94,6 +94,9 @@ begin
     where id = user_id;
   end if;
 
+  -- Check for new achievements
+  perform check_and_award_achievements(user_id);
+
   return jsonb_build_object(
     'points_awarded', reward_points,
     'xp_awarded', xp_gained,

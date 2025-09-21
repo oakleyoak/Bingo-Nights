@@ -94,6 +94,30 @@ create table if not exists game_results (
   finished_at timestamptz default now()
 );
 
+-- achievements: available achievements in the game
+create table if not exists achievements (
+  id uuid primary key default gen_random_uuid(),
+  name text not null,
+  description text not null,
+  icon text, -- icon identifier or emoji
+  category text not null, -- 'gameplay', 'social', 'progression', 'special'
+  requirement_type text not null, -- 'total_games', 'total_bingos', 'level', 'consecutive_logins', 'best_placement'
+  requirement_value integer not null,
+  reward_points integer default 0,
+  reward_xp integer default 0,
+  is_hidden boolean default false,
+  created_at timestamptz default now()
+);
+
+-- user_achievements: achievements earned by users
+create table if not exists user_achievements (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid references profiles(id) on delete cascade,
+  achievement_id uuid references achievements(id) on delete cascade,
+  earned_at timestamptz default now(),
+  unique(user_id, achievement_id)
+);
+
 -- Function to calculate XP reward based on placement
 create or replace function calculate_placement_xp(placement integer)
 returns integer

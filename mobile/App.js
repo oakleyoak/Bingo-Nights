@@ -96,6 +96,62 @@ export default function App() {
     setGameStatus('finished');
   };
 
+  // Check for new achievements and show notifications
+  const checkForNewAchievements = async (updatedProfile) => {
+    try {
+      // Get user's achievements
+      const { data: userAchievements, error: uaError } = await supabase
+        .from('user_achievements')
+        .select(`
+          earned_at,
+          achievements (
+            name,
+            description,
+            icon,
+            reward_points,
+            reward_xp
+          )
+        `)
+        .eq('user_id', user.id)
+        .order('earned_at', { ascending: false })
+        .limit(5); // Get recent achievements
+
+      if (uaError) {
+        console.error('Error fetching achievements:', uaError);
+        return;
+      }
+
+      // Check if any achievements were earned recently (within last 2 minutes)
+      const twoMinutesAgo = new Date(Date.now() - 2 * 60 * 1000);
+      const recentAchievements = userAchievements?.filter(ua =>
+        new Date(ua.earned_at) > twoMinutesAgo
+      ) || [];
+
+      // Show achievement notifications
+      recentAchievements.forEach((ua, index) => {
+        setTimeout(() => {
+          const achievement = ua.achievements;
+          alert(`🏆 Achievement Unlocked!\n\n${achievement.icon || '🎖️'} ${achievement.name}\n${achievement.description}\n\n+${achievement.reward_points} points, +${achievement.reward_xp} XP`);
+        }, index * 1000); // Stagger notifications
+      });
+
+      // Update profile to reflect new points/XP from achievements
+      if (recentAchievements.length > 0) {
+        const { data: latestProfile } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', user.id)
+          .single();
+
+        if (latestProfile) {
+          setUserProfile(latestProfile);
+        }
+      }
+    } catch (error) {
+      console.error('Error checking achievements:', error);
+    }
+  };
+
   // Check for bingo on any of the player's cards
   const checkBingo = () => {
     return playerCards.some(card => {
@@ -250,6 +306,9 @@ export default function App() {
             alert(`🎉 Level Up! You reached Level ${updatedProfile.level}! Daily rewards increased by 10%!`);
             setUserProfile(updatedProfile);
           }
+
+          // Check for new achievements
+          await checkForNewAchievements(updatedProfile);
         }, 2000);
       } else {
         alert('❌ Bingo claim rejected. Please check your card.');
@@ -759,6 +818,9 @@ export default function App() {
                 <Text style={styles.userStatsText}>
                   🔥 {userProfile.consecutive_login_days} day streak
                 </Text>
+                <Text style={styles.userStatsText}>
+                  🎯 {userProfile.total_bingos || 0} bingos • 🏆 Best: #{userProfile.best_placement || 'N/A'}
+                </Text>
               </View>
             )}
           </View>
@@ -779,6 +841,14 @@ export default function App() {
             • Get 5 in a row (horizontal, vertical, or diagonal) to win!{'\n'}
             • Be the first to call "BINGO!" when you complete a line{'\n'}
             • Earn points daily by logging in and playing games!
+          </Text>
+        </View>
+
+        {/* Achievements Section */}
+        <View style={styles.achievementsCard}>
+          <Text style={styles.achievementsTitle}>🏆 Recent Achievements</Text>
+          <Text style={styles.achievementsText}>
+            Complete challenges to earn badges and bonus rewards!
           </Text>
         </View>
 
@@ -1062,6 +1132,26 @@ const styles = StyleSheet.create({
   instructionsText: {
     fontSize: 14,
     color: '#424242',
+    lineHeight: 20,
+  },
+  achievementsCard: {
+    backgroundColor: '#fff3cd',
+    borderRadius: 12,
+    padding: 20,
+    marginHorizontal: 20,
+    marginBottom: 20,
+    borderLeftWidth: 4,
+    borderLeftColor: '#ffc107',
+  },
+  achievementsTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#856404',
+    marginBottom: 10,
+  },
+  achievementsText: {
+    fontSize: 14,
+    color: '#856404',
     lineHeight: 20,
   },
   gamesList: {
