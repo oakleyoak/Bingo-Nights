@@ -1,11 +1,11 @@
 [build]
-  command = "echo 'web admin is serverless; no build'"
+  command = "echo 'Simple HTML admin - no build needed'"
   functions = "web-admin/netlify/functions"
   publish = "web-admin"
 
 [dev]
-  framework = "none"
-  command = "npm run start --prefix web-admin"
+  command = "cd web-admin && python -m http.server 3000"
+  port = 3000
 
 [[redirects]]
   from = "/*"

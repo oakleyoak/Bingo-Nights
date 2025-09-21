@@ -4,8 +4,17 @@
 create table if not exists profiles (
   id uuid primary key references auth.users on delete cascade,
   username text,
+  points integer default 100, -- Starting points for new players
+  level integer default 1, -- Player level (affects rewards)
+  experience_points integer default 0, -- XP for leveling up
+  last_login_date date, -- Last login date for daily rewards
+  consecutive_login_days integer default 0, -- Consecutive days logged in
+  total_games_played integer default 0,
+  total_bingos integer default 0,
+  best_placement integer, -- Best finishing position (1-5)
   avatar_url text,
-  created_at timestamptz default now()
+  created_at timestamptz default now(),
+  updated_at timestamptz default now()
 );
 
 -- games table: one row per active or past bingo game
@@ -34,9 +43,21 @@ create table if not exists players (
 create table if not exists bingo_cards (
   id uuid primary key default gen_random_uuid(),
   game_id uuid references games(id) on delete cascade,
+  player_id uuid references players(id) on delete set null,
+  card_number integer not null, -- 1-4 for multi-card support
   numbers integer[][], -- 2D array of numbers (5x5)
   marked boolean[][], -- same shape as numbers; managed by clients/server
-  owner_player uuid references players(id) on delete set null
+  created_at timestamptz default now()
+);
+
+-- card_purchases: track when players buy cards
+create table if not exists card_purchases (
+  id uuid primary key default gen_random_uuid(),
+  player_id uuid references players(id) on delete set null,
+  game_id uuid references games(id) on delete cascade,
+  cards_purchased integer not null,
+  points_spent integer not null,
+  purchased_at timestamptz default now()
 );
 
 -- called_numbers: numbers called by host in order
@@ -56,13 +77,99 @@ create table if not exists bingo_claims (
   card_snapshot jsonb, -- snapshot of card and marks for verification
   called_numbers_snapshot jsonb,
   verified boolean default false,
+  placement integer, -- 1st, 2nd, 3rd, etc.
+  points_awarded integer default 0,
   resolved_at timestamptz
 );
 
--- minimal indexes
-create index if not exists idx_games_status on games(status);
-create index if not exists idx_players_game on players(game_id);
-create index if not exists idx_called_numbers_game on called_numbers(game_id);
+-- game_results: final results for each game
+create table if not exists game_results (
+  id uuid primary key default gen_random_uuid(),
+  game_id uuid references games(id) on delete cascade,
+  player_id uuid references players(id) on delete set null,
+  placement integer not null, -- 1st, 2nd, 3rd, etc.
+  points_awarded integer default 0,
+  cards_used integer default 1,
+  is_ai_player boolean default false,
+  finished_at timestamptz default now()
+);
+
+-- Function to calculate XP reward based on placement
+create or replace function calculate_placement_xp(placement integer)
+returns integer
+language plpgsql
+as $$
+begin
+  case placement
+    when 1 then return 50;  -- 1st place: 50 XP
+    when 2 then return 30;  -- 2nd place: 30 XP
+    when 3 then return 20;  -- 3rd place: 20 XP
+    when 4 then return 15;  -- 4th place: 15 XP
+    when 5 then return 10;  -- 5th place: 10 XP
+    else return 5;           -- Participation: 5 XP
+  end case;
+end;
+$$;
+
+-- Function to calculate daily login XP
+create or replace function calculate_daily_login_xp(consecutive_days integer)
+returns integer
+language plpgsql
+as $$
+begin
+  return 5 + (consecutive_days - 1) * 2; -- 5 base + 2 per consecutive day
+end;
+$$;
+
+-- Function to award XP and check for level up
+create or replace function award_xp_and_check_level(user_id uuid, xp_amount integer)
+returns jsonb
+language plpgsql
+as $$
+declare
+  user_profile profiles%rowtype;
+  new_level integer;
+  leveled_up boolean := false;
+  xp_needed integer;
+begin
+  -- Get current profile
+  select * into user_profile from profiles where id = user_id;
+  if not found then
+    return jsonb_build_object('success', false, 'error', 'Profile not found');
+  end if;
+
+  -- Add XP
+  user_profile.experience_points := user_profile.experience_points + xp_amount;
+
+  -- Check for level up
+  new_level := user_profile.level;
+  xp_needed := new_level * 100;
+
+  while user_profile.experience_points >= xp_needed loop
+    user_profile.experience_points := user_profile.experience_points - xp_needed;
+    new_level := new_level + 1;
+    leveled_up := true;
+    xp_needed := new_level * 100;
+  end loop;
+
+  -- Update profile
+  update profiles
+  set experience_points = user_profile.experience_points,
+      level = new_level,
+      updated_at = now()
+  where id = user_id;
+
+  return jsonb_build_object(
+    'success', true,
+    'leveled_up', leveled_up,
+    'new_level', new_level,
+    'xp_awarded', xp_amount
+  );
+end;
+$$;
+create index if not exists idx_profiles_points on profiles(points desc);
+create index if not exists idx_game_results_game on game_results(game_id);
+create index if not exists idx_bingo_cards_player on bingo_cards(player_id);
 
 -- Seed: demo game
 insert into games (id, title, status)
@@ -134,5 +241,59 @@ begin
   end if;
 
   return false;
+end;
+$$;
+
+-- Function: calculate_placement_points
+-- Returns points awarded for a given placement
+create or replace function public.calculate_placement_points(placement integer)
+returns integer
+language plpgsql
+as $$
+begin
+  case placement
+    when 1 then return 100; -- 1st place
+    when 2 then return 50;  -- 2nd place
+    when 3 then return 25;  -- 3rd place
+    when 5 then return 10;  -- 5th place
+    else return 0;           -- No points for other placements
+  end case;
+end;
+$$;
+
+-- Function: get_random_unused_number
+-- Returns a random number 1-75 that hasn't been called in the game
+create or replace function public.get_random_unused_number(game_id_param uuid)
+returns integer
+language plpgsql
+as $$
+declare
+  called_nums integer[];
+  available_nums integer[];
+  result integer;
+begin
+  -- Get already called numbers for this game
+  select array_agg(number) into called_nums
+  from called_numbers
+  where game_id = game_id_param;
+
+  -- Generate array of all possible numbers 1-75
+  select array_agg(generate_series) into available_nums
+  from generate_series(1, 75);
+
+  -- Remove called numbers from available numbers
+  if called_nums is not null then
+    select array_agg(num) into available_nums
+    from unnest(available_nums) as num
+    where num not in (select unnest(called_nums));
+  end if;
+
+  -- Return random number from remaining available numbers
+  if array_length(available_nums, 1) > 0 then
+    select available_nums[1 + floor(random() * array_length(available_nums, 1))::int] into result;
+    return result;
+  else
+    return null; -- No numbers left (shouldn't happen in normal play)
+  end if;
 end;
 $$;

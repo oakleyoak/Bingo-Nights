@@ -12,6 +12,8 @@
     "supabase:init": "echo 'Install Supabase CLI: https://supabase.com/docs/guides/cli'"
   },
   "devDependencies": {
-    "supabase": "^2.40.7"
+    "@types/react": "~19.1.10",
+    "supabase": "^2.40.7",
+    "typescript": "~5.9.2"
   }
 }

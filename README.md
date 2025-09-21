@@ -1,20 +1,96 @@
-# Bingo Nights - Multiplayer Bingo Game
+# Bingo Nights 🎲
 
-A fully functional multiplayer Bingo mobile game built with React Native (Expo), Supabase for realtime backend, and Netlify for deployment. Features realtime multiplayer gameplay with no local storage - all data synchronized through Supabase.
+**Automated Multiplayer Bingo Game** - Numbers called every 5 seconds, compete for points and prizes!
 
-## 🎯 Project Status: PRODUCTION READY
+## 🎮 Game Overview
 
-All core features implemented and tested. Ready for deployment and user testing.
+Bingo Nights is an automated multiplayer bingo game where:
+- Numbers are called automatically every 5 seconds
+- Players get FREE bingo cards when joining games
+- Daily login rewards with consecutive day bonuses
+- Player levels that increase reward amounts
+- Points system rewards top finishers and daily logins
+- AI players ensure lively gameplay even with few real players
+- Simple, addictive, and social bingo experience
 
-### ✅ What's Working
-- **Mobile App**: Complete React Native app with Expo
-- **Authentication**: Magic link authentication via Supabase
-- **Multiplayer Lobby**: Create and join games in realtime
-- **Gameplay**: Realtime bingo card updates, number calling, bingo detection
-- **Backend**: Full Supabase integration (Database, Auth, Realtime, Edge Functions)
-- **Validation**: Server-side bingo verification
-- **Cross-Platform**: iOS, Android, Web support
-- **Deployment**: GitHub repo ready, Netlify config prepared
+### Key Features
+- ✅ **Automated Gameplay**: No waiting for hosts - numbers called every 5 seconds
+- ✅ **Free Cards**: Get a free bingo card when joining any game
+- ✅ **Daily Login Rewards**: Earn points every day you log in, with bonuses for consecutive days
+- ✅ **Player Levels**: Level up to increase your daily reward multipliers
+- ✅ **Points System**: Earn points for top placements and daily logins
+- ✅ **AI Players**: Always 3 simulated players for lively atmosphere
+- ✅ **Real-time Multiplayer**: Join live games with other players
+- ✅ **Mobile-First**: Optimized for mobile devices
+
+## 🎯 How to Play
+
+1. **Sign Up/Login** with email and password (get daily rewards automatically!)
+2. **Earn Daily Rewards** - Log in daily to earn points, XP, and level up
+3. **Join Bingo Night** - Click "Join Bingo Night" to get a FREE bingo card
+4. **Watch & Mark** - Numbers called every 5 seconds, mark your card
+5. **Call Bingo** - Get 5-in-a-row and claim your placement reward!
+6. **Level Up** - Gain XP from games and logins to increase your rewards
+7. **Compete** - Top 5 placements get points and XP based on finishing position
+
+### Single Game System
+- **One Active Game**: Only one "Bingo Night" game is active at a time
+- **Automatic Creation**: New games start automatically when players join
+- **Continuous Play**: Games run continuously with automated number calling
+- **Fair Competition**: Everyone plays in the same game session
+
+### Points & Rewards System
+
+#### Daily Login Rewards
+- **Base Reward**: 10 points per day
+- **Level Multiplier**: +10% per level (Level 2 = 11 points, Level 3 = 12.1 points, etc.)
+- **Consecutive Bonus**: +5% per consecutive day (2nd day = +5%, 3rd day = +10%, etc.)
+- **XP Gain**: 5 base XP + 2 XP per consecutive day
+- **Maximum Streak**: No limit - keep logging in for bigger bonuses!
+
+#### Game Placement Rewards
+- 🥇 **1st Place**: **100 points** + 50 XP
+- 🥈 **2nd Place**: **50 points** + 30 XP
+- 🥉 **3rd Place**: **25 points** + 20 XP
+- 4️⃣ **4th Place**: **15 points** + 10 XP
+- 5️⃣ **5th Place**: **10 points** + 10 XP
+
+#### Leveling System
+- **XP Required**: Level × 100 XP (Level 2 needs 200 XP, Level 3 needs 300 XP, etc.)
+- **XP Sources**:
+  - Daily logins: 5 base + 2 per consecutive day
+  - Game placements: 50/30/20/10/10 XP for top 5
+- **Benefits**: Higher levels increase daily login reward multipliers (+10% per level)
+- **Level-up Notifications**: Automatic alerts when you level up!
+
+### Game Rules
+- **Free Cards**: Every player gets 1 free bingo card per game
+- **Automated Calling**: Numbers called every 5 seconds automatically
+- **Winning**: Get 5-in-a-row (horizontal, vertical, or diagonal)
+- **Fair Play**: AI players ensure lively games even with few real players
+
+## 🎯 PROJECT STATUS: UNDER DEVELOPMENT
+
+**Transforming into automated multiplayer bingo game with points system and AI players.**
+
+### Current Vision ✅
+- **Automated Gameplay**: Numbers called every 5 seconds automatically
+- **Points System**: Earn points for top placements (1st: 100pts, 2nd: 50pts, 3rd: 25pts, 5th: 10pts)
+- **Multi-Card Support**: Purchase 1-4 bingo cards per game (10 points each)
+- **AI Simulation**: Always show 3 AI players unless 4+ real players join
+- **Mobile-Only**: Removing web admin, focusing on core mobile game experience
+
+### What's Working ✅
+- **Supabase Backend**: Database schema and edge functions
+- **Mobile App**: Basic React Native app with authentication
+- **Realtime Features**: Live game synchronization
+
+### What's Being Built 🚧
+- **Automated Number Calling**: 5-second intervals until bingo
+- **Points & Card System**: Player profiles with points and card purchasing
+- **AI Player Simulation**: Simulated players for lively gameplay
+- **Multi-Card UI**: Support for up to 4 cards per player
+- **Scoring System**: Points allocation for top finishers
 
 ## 🚀 Quick Start
 
@@ -39,18 +115,23 @@ SUPABASE_ANON_KEY=[Your anon key from Supabase dashboard]
 
 ## 📱 Features
 
-### Core Gameplay
-- **Realtime Multiplayer**: Instant game synchronization
-- **Magic Link Auth**: Passwordless authentication
-- **Dynamic Bingo Cards**: Unique cards for each player
-- **Server Validation**: Prevents cheating with Edge Functions
-- **Cross-Platform**: Works on iOS, Android, and Web
+### Implemented ✅
+- **Realtime Multiplayer**: Instant game synchronization via Supabase
+- **Magic Link Auth**: Passwordless authentication via Supabase Auth
+- **Database Backend**: Complete PostgreSQL schema with custom functions
+- **Server-side Validation**: Anti-cheating bingo verification
+- **Cross-Platform Support**: iOS, Android, Web via Expo
 
-### Technical Features
-- **No Local Storage**: Fully online, cloud-synced
-- **Realtime Updates**: Live game state via Supabase subscriptions
-- **Scalable Backend**: Serverless Edge Functions
-- **Secure**: Row Level Security on all database operations
+### In Development 🚧
+- **Bingo Validation**: Server-side verification of bingo claims
+- **Host Controls**: Number calling and game management interface
+- **Enhanced Game Features**: Statistics, leaderboards, multiple game modes
+
+### Planned 🔮
+- **Enhanced UI/UX**: Modern design and animations
+- **Push Notifications**: Game event notifications
+- **Social Features**: Friends, chat, tournaments
+- **Analytics**: Game statistics and reporting
 
 ## 🏗️ Architecture
 
@@ -59,6 +140,12 @@ SUPABASE_ANON_KEY=[Your anon key from Supabase dashboard]
 - Lobby system for game management
 - Realtime game screen with bingo card
 - Web support for browser testing
+
+### Web Admin (Simple HTML/CSS/JS)
+- **Frontend**: Vanilla JavaScript with Tailwind CSS
+- **Backend**: Supabase (Database, Auth, Realtime)
+- **Icons**: Lucide React (CDN)
+- **Hosting**: Simple HTTP server or Netlify
 
 ### Backend (Supabase)
 - **Database**: PostgreSQL with custom functions
@@ -100,14 +187,26 @@ SUPABASE_ANON_KEY=[Your anon key from Supabase dashboard]
 
 ### Database Function Test
 ```bash
-npm install @supabase/supabase-js
+# Set up environment variables (one time setup)
+.\setup-env.ps1 -SupabaseUrl 'https://your-project.supabase.co' -SupabaseAnonKey 'your-key'
+
+# Or create .env file manually (see .env.example)
+
+# Run the test
 node test_verify_bingo.js
 ```
 
+### Current Issues
+- **Game Logic**: Need to implement proper bingo validation flow in mobile app
+- **Host Controls**: Add game management features for hosts
+- **Integration Tests**: No automated end-to-end testing setup
+
 ### Mobile App Testing
-1. Start Expo: `npx expo start`
-2. Scan QR code with Expo Go
-3. Test authentication and gameplay
+1. Install dependencies: `cd mobile && npm install`
+2. Start Expo: `npx expo start`
+3. **✅ App now loads successfully with Supabase integration**
+4. Scan QR code with Expo Go app or open in web browser
+5. Test authentication flow and basic game features
 
 ## 📋 Project Analysis
 
@@ -123,8 +222,13 @@ npm install
 # Start mobile app
 cd mobile && npx expo start
 
-# Start web admin (optional)
-cd web-admin && npm run start
+# Start web admin (simple HTTP server)
+cd web-admin
+python -m http.server 3000
+# Opens at http://localhost:3000
+
+# Test database connection
+node test_verify_bingo.js
 ```
 
 ### Supabase Management
@@ -155,44 +259,71 @@ supabase functions deploy
 
 ## 🛠️ Technologies Used
 
-- **React Native** + **Expo**: Cross-platform mobile development
-- **Supabase**: Backend-as-a-Service (Database, Auth, Realtime)
-- **Netlify**: Serverless deployment and functions
-- **PostgreSQL**: Database with custom functions
-- **TypeScript**: Type-safe development
+- **Mobile App**: React Native + Expo
+- **Backend**: Supabase (Database, Auth, Realtime, Edge Functions)
+- **Database**: PostgreSQL with custom functions and triggers
+- **Deployment**: Netlify (mobile app), GitHub (source control)
+- **Icons**: Lucide (CDN)
+- **Development Tools**: Python HTTP server, PowerShell scripts
 
 ## 📈 Roadmap
 
-### Completed ✅
-- Core multiplayer bingo functionality
-- Realtime game synchronization
-- Server-side validation
-- Cross-platform mobile app
-- Supabase backend integration
+### Immediate Priorities (Next 1-2 weeks)
+- **Automated Game System**: Implement 5-second automatic number calling
+- **Points & Profiles**: Add player profiles with points system
+- **Multi-Card Support**: Allow purchasing 1-4 cards per game
+- **AI Player Simulation**: Show 3 simulated players for lively gameplay
+- **Remove Web Admin**: Simplify to mobile-only experience
 
-### Next Steps 🔄
-- Deploy web admin to Netlify
-- Submit to app stores
-- Add game statistics and leaderboards
-- Implement additional game modes
+### Short Term (1-2 months)
+- **Scoring System**: Points allocation for 1st, 2nd, 3rd, 5th place
+- **Game Results**: Display final standings and points earned
+- **UI Polish**: Optimize card layout for multiple cards
+- **Performance**: Optimize for smooth 5-second intervals
 
-## 🤝 Contributing
+### Future Enhancements
+- **Leaderboards**: Global and weekly rankings
+- **Achievements**: Special rewards and milestones
+- **Themes**: Different card designs and themes
+- **Social Features**: Friend invites and game history
 
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Test thoroughly
-5. Submit a pull request
+## ⚠️ Important Notes
 
-## 📄 License
+### Current Status
+- **Under Development**: Transforming into automated multiplayer bingo game
+- **Mobile-Only Focus**: Web admin being removed for streamlined experience
+- **New Features**: Points system, multi-card support, AI players coming soon
 
-This project is licensed under the MIT License.
+### Getting Started (Development)
+```bash
+# Clone and setup
+git clone [repository-url]
+cd bingo-nights
+
+# Install dependencies
+npm install
+
+# Setup mobile app
+cd mobile
+npm install
+npx expo start
+```
+
+### Contributing
+This project needs contributors! Key areas for contribution:
+- **Automated Game Logic**: Number calling automation and game flow
+- **Points System**: Player profiles, scoring, and card purchasing
+- **AI Simulation**: Simulated player behavior and game balancing
+- **Multi-Card UI**: Mobile interface for managing multiple bingo cards
+- **Real-time Features**: Performance optimization for 5-second intervals
+
+See [ANALYSIS.md](ANALYSIS.md) for detailed development roadmap and current issues.
 
 ---
 
 **Built with ❤️ using React Native, Supabase, and Netlify**
 
-*Last Updated: September 20, 2025*
+*Last Updated: September 21, 2025*
 
 ## Environment Variables
 

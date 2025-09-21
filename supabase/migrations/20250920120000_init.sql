@@ -5,6 +5,11 @@
 create table if not exists profiles (
   id uuid primary key references auth.users on delete cascade,
   username text,
+  points integer default 100, -- Starting points for new players
+  level integer default 1, -- Player level (affects rewards)
+  experience_points integer default 0, -- XP for leveling up
+  last_login_date date, -- Last login date for daily rewards
+  consecutive_login_days integer default 0, -- Consecutive days logged in
   avatar_url text,
   created_at timestamptz default now()
 );
@@ -64,10 +69,6 @@ create table if not exists bingo_claims (
 create index if not exists idx_games_status on games(status);
 create index if not exists idx_players_game on players(game_id);
 create index if not exists idx_called_numbers_game on called_numbers(game_id);
-
--- Seed: demo game
-insert into games (id, title, status)
-values (gen_random_uuid(), 'Demo Room', 'waiting');
 
 -- Function: verify_bingo
 -- Verifies whether a provided card snapshot (jsonb) contains a winning bingo
